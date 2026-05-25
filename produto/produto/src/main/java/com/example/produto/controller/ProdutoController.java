@@ -1,9 +1,11 @@
 package com.example.produto.controller;
 
+import com.example.produto.dto.ProdutoDTO;
 import com.example.produto.model.Produto;
-import com.example.produto.repository.ProdutoRepository;
+import com.example.produto.service.ProdutoService;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -12,43 +14,60 @@ import java.util.List;
 @RequestMapping("/produto")
 public class ProdutoController {
 
-    @Autowired
-    private ProdutoRepository repository;
+    private final ProdutoService service;
 
-    // CADASTRAR PRODUTO
+    public ProdutoController(ProdutoService service) {
+        this.service = service;
+    }
+
     @PostMapping
-    public Produto cadastrar(@RequestBody Produto produto) {
-        return repository.save(produto);
+    public ResponseEntity<Produto> cadastrar(@RequestBody ProdutoDTO dto) {
+
+        Produto produto = service.cadastrar(dto);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(produto);
     }
 
-    // LISTAR PRODUTOS
     @GetMapping
-    public List<Produto> listar() {
-        return repository.findAll();
+    public ResponseEntity<List<Produto>> listar() {
+
+        return ResponseEntity.ok(service.listar());
     }
 
-    // ATUALIZAR PRODUTO
-    @PutMapping("/{id}")
-    public Produto atualizar(@PathVariable Long id,
-                             @RequestBody Produto produtoAtualizado) {
+    @GetMapping("/{id}")
+    public ResponseEntity<Produto> buscarPorId(@PathVariable Long id) {
 
-        Produto produto = repository.findById(id).orElse(null);
+        Produto produto = service.buscarPorId(id);
 
         if (produto != null) {
-
-            produto.setNome(produtoAtualizado.getNome());
-            produto.setPreco(produtoAtualizado.getPreco());
-            produto.setCategoria(produtoAtualizado.getCategoria());
-
-            return repository.save(produto);
+            return ResponseEntity.ok(produto);
         }
 
-        return null;
+        return ResponseEntity.notFound().build();
     }
 
-    // DELETAR PRODUTO
+    @PutMapping("/{id}")
+    public ResponseEntity<Produto> atualizar(@PathVariable Long id,
+                                             @RequestBody ProdutoDTO dto) {
+
+        Produto produto = service.atualizar(id, dto);
+
+        if (produto != null) {
+            return ResponseEntity.ok(produto);
+        }
+
+        return ResponseEntity.notFound().build();
+    }
+
     @DeleteMapping("/{id}")
-    public void deletar(@PathVariable Long id) {
-        repository.deleteById(id);
+    public ResponseEntity<String> deletar(@PathVariable Long id) {
+
+        boolean removido = service.deletar(id);
+
+        if (removido) {
+            return ResponseEntity.ok("Produto removido com sucesso");
+        }
+
+        return ResponseEntity.notFound().build();
     }
 }
